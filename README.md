@@ -6,7 +6,7 @@
 * Python 3.8+
 * PyTorch 1.10+
 * CUDA 11.x
-* CompressAI [https://github.com/InterDigitalInc/CompressAI]
+* [CompressAI](https://github.com/InterDigitalInc/CompressAI)
 
 
 #### 🚀 Training
