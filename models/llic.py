@@ -118,7 +118,6 @@ class ResidualBottleneckBlock(nn.Module):
         return out + identity
 
 
-# 下采样kernel设置为为3x3 g_a换成LSConv 2层
 class LLIC(SimpleVAECompressionModel):
     """ELIC 2022; uneven channel groups with checkerboard spatial context.
 
@@ -154,15 +153,12 @@ class LLIC(SimpleVAECompressionModel):
             conv(3, N, kernel_size=5, stride=2),
             LSConv(N),
             LSConv(N),
-            # ResidualBottleneckBlock(N, N),
             conv(N, N, kernel_size=3, stride=2),
             LSConv(N),
             LSConv(N),
-            # ResidualBottleneckBlock(N, N),
             conv(N, N, kernel_size=3, stride=2),
             LSConv(N),
             LSConv(N),
-            # ResidualBottleneckBlock(N, N),
             conv(N, M, kernel_size=3, stride=2),
         )
 
@@ -200,7 +196,6 @@ class LLIC(SimpleVAECompressionModel):
             deconv(N * 3 // 2, N * 2, kernel_size=3, stride=1),
         )
 
-        # In [He2022], this is labeled "g_ch^(k)".   改这里，输入输出通道对上就行
         channel_context = {
             f"y{k}": nn.Sequential(
                 conv(sum(self.groups[:k]), 224, kernel_size=5, stride=1),
@@ -212,7 +207,6 @@ class LLIC(SimpleVAECompressionModel):
             for k in range(1, len(self.groups))
         }
 
-        # In [He2022], this is labeled "g_sp^(k)".
         spatial_context = [
             CheckerboardMaskedConv2d(
                 self.groups[k],
@@ -224,7 +218,6 @@ class LLIC(SimpleVAECompressionModel):
             for k in range(len(self.groups))
         ]
 
-        # In [He2022], this is labeled "Param Aggregation".
         param_aggregation = [
             sequential_channel_ramp(
                 # Input: spatial context, channel context, and hyper params.
@@ -242,8 +235,6 @@ class LLIC(SimpleVAECompressionModel):
             for k in range(len(self.groups))
         ]
 
-        # In [He2022], this is labeled the space-channel context model (SCCTX).
-        # The side params and channel context params are computed externally.
         scctx_latent_codec = {
             f"y{k}": CheckerboardLatentCodec(
                 latent_codec={
@@ -255,8 +246,6 @@ class LLIC(SimpleVAECompressionModel):
             for k in range(len(self.groups))
         }
 
-        # [He2022] uses a "hyperprior" architecture, which reconstructs y using z.
-        # 这里的hyper就是Entropy Bottleneck  这里的y等价于Gaussian Conditional+一个上下文模型
         self.latent_codec = HyperpriorLatentCodec(
             latent_codec={
                 # Channel groups with space-channel context model (SCCTX):
@@ -275,7 +264,6 @@ class LLIC(SimpleVAECompressionModel):
             },
         )
 
-    # 改这里 改g_s:输入y_hat,双输出x_hat和x_sr 
     def forward(self, x):
         y = self.g_a(x)
         y_out = self.latent_codec(y)
