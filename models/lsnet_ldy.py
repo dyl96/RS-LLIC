@@ -10,9 +10,6 @@ from torch.amp import custom_fwd, custom_bwd
 import math
 
 
-"""
-LSConv: Large-Small Convolution 轻量级版本
-"""
 
 def _grid(numel: int, bs: int) -> tuple:
     return (triton.cdiv(numel, bs),)
@@ -341,7 +338,6 @@ class RepVGGDW(torch.nn.Module):
 
 import torch.nn as nn
 
-# 去掉了BN层
 class LKP(nn.Module):
     def __init__(self, dim, lks, sks, groups):
         super().__init__()
@@ -364,19 +360,15 @@ class LKP(nn.Module):
         return w
 
 
-# 只用这个替换Residual Block就够了  
-# 加了个ReLU激活函数
 class LSConv(nn.Module):
     def __init__(self, dim):
         super(LSConv, self).__init__()
         self.lkp = LKP(dim, lks=7, sks=3, groups=8)
         self.ska = SKA()
-        # self.bn = nn.BatchNorm2d(dim)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        # return self.relu(self.bn(self.ska(x, self.lkp(x)))) + x
-        return self.relu(self.ska(x, self.lkp(x))) + x  # 如果不需要BN层可以用这一行替换上面一行
+        return self.relu(self.ska(x, self.lkp(x))) + x  
     
 
 
